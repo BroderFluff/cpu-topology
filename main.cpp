@@ -1,6 +1,8 @@
+#include <cassert>
 #include <cstdio>
 #include <cstdint>
 #include <vector>
+
 
 #define BIT_CHECK(val, bits) \
     (((val) & (bits)) == (bits))
@@ -127,26 +129,44 @@ struct CPUInfo {
         detectTopology();
     }
 
-    struct SMTDesc {
-        std::uint32_t id;
-        SMTDesc *next;
-    };
+    struct PhysicalCore;
 
-    struct CoreDesc {
-        std::uint32_t id;
-        SMTDesc *smts;
-        
+    struct LogicalCore {
+        std::uint32_t coreIndex;
         std::uint32_t siblings;
-        std::uint32_t levelType;
-        std::uint32_t x2APIC;
     };
 
-    struct CPUDesc {
-        std::uint32_t numCores;
-        CoreDesc *cores;
+    struct PhysicalCore {
+        std::uint32_t numLogicalCores {};
+        std::uint32_t *logicalIds {};
     };
 
-    CPUDesc cpuDesc;
+    enum class CpuNodeType : std::uint32_t {
+        Invalid,
+        SMT,
+        Core,
+    };
+
+    struct CpuNode {
+        CpuNode() noexcept
+          : id { -1U }
+          , type { CpuNodeType::Invalid} {
+        }
+
+        std::uint32_t       id;
+        CpuNodeType         type;
+        union { 
+            LogicalCore     l;
+            PhysicalCore    p;
+        } core {};
+    };
+
+    struct Cpu {
+        std::uint32_t numNodes;
+        CpuNode *nodes = nullptr;
+    };
+
+    Cpu cpu;
 
     struct thread {
         pthread_t t;
@@ -154,17 +174,80 @@ struct CPUInfo {
     };
 
     static void* threadRoutine(void *p) {
-        for (std::uint32_t level = 0; level < 2; ++level) {
             Regs leaf;
-            __get_cpuid_count(0xB, level, &leaf.eax, &leaf.ebx, &leaf.ecx, &leaf.edx);
+
+            // First query level one (SMT):
+            __get_cpuid_count(0xB, 0, &leaf.eax, &leaf.ebx, &leaf.ecx, &leaf.edx);
+
+            const std::uint32_t levelType = (leaf.ecx & 0xFF00) >> 8;
+            assert(levelType == 1);
+
+            Cpu *cpu = static_cast<Cpu *>(p);
+
+            CpuNode &node0 = cpu->nodes[leaf.edx];
+            node0.id = leaf.edx;
+            node0.type = CpuNodeType::SMT;
+
+            LogicalCore &smt = node0.core.l;
+            smt.siblings = (leaf.ebx & 0xFF);
+
+            // Second query level (Core)
+            __get_cpuid_count(0xB, 1, &leaf.eax, &leaf.ebx, &leaf.ecx, &leaf.edx);
+
+            const uint32_t coreSiblings = leaf.ebx & 0xFF;
+            smt.coreIndex = leaf.edx + coreSiblings;
+
+            CpuNode &node1 = cpu->nodes[smt.coreIndex];
+            
 
             const std::uint32_t bitShift = leaf.eax & 0x0F;
-            const std::uint32_t numCpus = leaf.ebx & 0xFF;
-            const std::uint32_t levelType = (leaf.ecx & 0xFF00) >> 8;
+            const std::uint32_t siblings = leaf.ebx & 0xFF;
             const std::uint32_t id = leaf.edx;
 
-            printf("thread on core: %d, levelType: 0x%x, id: 0x%x\n", ((CoreDesc *) p)->id, levelType, id);
-        }
+            smt.type = CpuNodeType::SMT;
+            smt.id = id;
+            smt.core.l = LogicalCore();
+            smt.core.l.physicalCoreId = (id >> bitShift);
+
+            std::printf("siblings: %d\n", siblings);
+
+
+            auto &core = cpu->nodes[coreIndex];
+
+            assert(core.type != CpuNodeType::SMT);
+
+            if (core.type == CpuNodeType::Invalid) {
+                core.type = CpuNodeType::Core;
+                core.id = leaf.edx;
+                core.core.p = {};
+
+                //printf("physical core id: %d\n", nextLevelNode.id + siblings);
+
+                auto &physicalCore = core.core.p;
+                physicalCore.numLogicalCores = siblings;
+                physicalCore.logicalIds = new std::uint32_t[siblings];
+                physicalCore.logicalIds[0] = id;
+            } else {
+                auto &physicalCore = core.core.p;
+                physicalCore.logicalIds[1] = id;
+
+                printf("core: %d, threads: %d, %d\n", core.id, physicalCore.logicalIds[0], physicalCore.logicalIds[1]);
+            }
+
+            if (siblings == 1) {
+                printf("core: %d, thread: %d\n", core.id, id);
+            }
+
+            /* if (!levelType) return nullptr;
+
+            if (levelType == 1) {
+                printf("Core id: %d\n", id >> bitShift);
+            } else if (levelType == 2) {
+                printf("Processor id: %d\n", id >> bitShift);
+            } */
+
+            //printf("thread on core: %d, siblings: %2d, levelType: 0x%x = %s, id: 0x%x\n", ((CoreDesc *) p)->id, siblings, levelType, levelType == 1 ? " SMT" : "Core", id);
+        //}
 
         return nullptr;
     }
@@ -172,44 +255,42 @@ struct CPUInfo {
     void detectTopology() {
         if (isIntel) {
 
-            const std::uint32_t numLogical = (leafs[1].ebx & 0xFF0000) >> 16;
-            printf("num lgical: 0x%x\n", numLogical);
+            const std::uint32_t maxNumIds = (leafs[1].ebx & 0xFF0000) >> 16;
+            printf("max x2APIC IDs: %d\n", maxNumIds);
 
             if (!hasHTT()) {
                 // Single core CPU.
                 return;
             }
 
-            const std::uint32_t numCores = ((leafs[4].eax & 0xFC000000) >> 26) + 1;
-            printf("num cores: %d\n", numCores);
+            dumpRegs(leafs[4]);
 
-            thread *threads = new thread[numCores];
-            cpu_set_t *cpusetp = CPU_ALLOC(numCores);
-            std::size_t size = CPU_ALLOC_SIZE(numCores);
+/*             const std::uint32_t numCores = ((leafs[4].eax & 0xFC000000) >> 26) + 1;
+            printf("num cores: %d\n", numCores); */
 
+            thread *threads = new thread[maxNumIds];
+            cpu_set_t *cpusetp = CPU_ALLOC(maxNumIds);
+            std::size_t size = CPU_ALLOC_SIZE(maxNumIds);
 
-
-            cpuDesc.numCores = numCores;
-            cpuDesc.cores = new CoreDesc[numCores];
-            for (int i = 0; i < numCores; ++i) {
+            cpu.numNodes = maxNumIds;
+            cpu.nodes = new CpuNode[maxNumIds];
+            for (int i = 0; i < cpu.numNodes; ++i) {
                 thread &th = threads[i];
-                cpuDesc.cores[i].id = i;
+                //cpu.nodes[i].id = i;
 
                 pthread_attr_init(&th.attr);
 
                 CPU_ZERO_S(size, cpusetp);
                 CPU_SET_S(i, size, cpusetp);
 
-                //printf("core: %d", i);
-
                 pthread_attr_setaffinity_np(&th.attr, size, cpusetp);
 
-                pthread_create(&th.t, &th.attr, threadRoutine, &cpuDesc.cores[i]);
+                pthread_create(&th.t, &th.attr, threadRoutine, &cpu);
+
+                pthread_join(th.t, nullptr);
             }
 
-            for (int i = 0; i < numCores; ++i) {
-                pthread_join(threads[i].t, nullptr);
-            }
+            CPU_FREE(cpusetp);
             
             if (nleafs >= 0x0000001F) {
                 puts("0x1F exists.");

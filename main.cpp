@@ -165,6 +165,8 @@ struct CPUInfo {
     struct Cpu {
         std::uint32_t numNodes;
         CpuNode *nodes = nullptr;
+
+	int index = 0;
     };
 
     Cpu cpu;
@@ -212,7 +214,7 @@ struct CPUInfo {
 		    cpu->nodes = new CpuNode[siblings2];
 		    cpu->numNodes = siblings2;
 	    }
-            CpuNode &node = cpu->nodes[nextLevelId];
+            CpuNode &node = cpu->nodes[cpu->index];
 
             if (node.type == CpuNodeType::Invalid) {
                 node.id = nextLevelId;
@@ -250,11 +252,11 @@ struct CPUInfo {
             //cpu.numNodes = maxNumIds;
 //            cpu.nodes = new CpuNode[maxNumIds];
 
-	    int i = 0;
             for (;;) {
-                cpu.nodes[i].core.l.nodeIndex = i++;
 
-                thread &th = threads[i];
+                thread &th = threads[cpu.index];
+
+const 		int i = cpu.index;
 
                 pthread_attr_init(&th.attr);
 
@@ -269,6 +271,8 @@ struct CPUInfo {
 		if (i >= cpu.numNodes) {
 			break;
 		}
+
+		cpu.index++;
             }
 
             CPU_FREE(cpusetp);

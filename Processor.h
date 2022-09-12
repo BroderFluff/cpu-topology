@@ -6,12 +6,14 @@
 
 namespace sys {
 
-struct Processor {
-    std::uint32_t vendorId[4];
-    std::uint32_t brand[12];
-
+class Processor {
+public:
     Processor() noexcept;
     ~Processor();
+
+private:
+    std::uint32_t vendorId[4];
+    std::uint32_t brand[12];
 };
 
 }

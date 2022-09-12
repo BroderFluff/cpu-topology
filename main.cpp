@@ -1,7 +1,9 @@
 #include <cassert>
 #include <cstdio>
 #include <cstdint>
+#include <cstring>
 #include <vector>
+#include <bit>
 
 
 #define BIT_CHECK(val, bits) \
@@ -57,6 +59,14 @@ static constexpr std::uint32_t bit_HYBRID = (1U << 15);
 #   endif
 #endif
 
+template <class To, class From>
+To bit_cast(const From &from) noexcept {
+    To dst;
+    std::memcpy(&dst, &from, sizeof(To));
+    return dst;
+
+}
+
 namespace sys {
 
 struct CPUInfo {
@@ -92,6 +102,10 @@ struct CPUInfo {
             isAMD = true;
         }
 
+        vendorId[0] = vendor.ebx;
+        vendorId[2] = vendor.ecx;
+        vendorId[1] = vendor.edx;
+
         leafs.resize(nleafs);
         std::uint32_t i = 0;
 #if __cpp_structured_bindings == 201606L
@@ -115,11 +129,7 @@ struct CPUInfo {
         printf("Model:     0x%x\n", (leaf.eax & 0xF0) >> 4);
         printf("stepping:  0x%x\n", (leaf.eax & 0xF));
 
-        if (hasHYBRID()) {  
-            Regs regs;
-            __get_cpuid_count(0x1A, 0, &regs.eax, &regs.ebx, &regs.ecx, &regs.edx);
-            printf("core type: 0x%x\n", (regs.eax & 0xffff0000) >> 16);
-        }
+
 	
 	Regs regs;	
 	__get_cpuid(0x80000000, &regs.eax, &regs.ebx, &regs.ecx, &regs.edx);
@@ -133,6 +143,11 @@ struct CPUInfo {
 
 
         detectTopology();
+    }
+
+    const char *getVendorId() const noexcept {
+        return bit_cast<char *>(&vendorId);
+        //return std::bit_cast<char *>(&vendorId);
     }
 
     struct LogicalCore {
@@ -197,6 +212,12 @@ Cpu *cpu = static_cast<Cpu *>(p);
             std::printf("siblings2: %d\n", numLogicalCores);
             std::printf("levelType2: %d\n", levelType2);
             std::printf("chip Id: %d\n", x2apicId >> bitShift2);
+
+/*             if (hasHYBRID()) {
+                Regs regs;
+                __get_cpuid_count(0x1A, 0, &regs.eax, &regs.ebx, &regs.ecx, &regs.edx);
+                printf("core type: 0x%x\n", (regs.eax & 0xffff0000) >> 16);
+            } */
 
 	        if (!cpu->nodes) {
 		        cpu->nodes = new CpuNode[numLogicalCores];
@@ -347,7 +368,9 @@ static const CPUInfo cpu;
 
 int main() {
 
-    puts((char*)sys::cpu.vendorId);
+    puts((char *)sys::cpu.vendorId);
+
+    puts(sys::cpu.getVendorId());
     puts((char*)sys::cpu.brand);
 
     printf("INTEL: %s\n", sys::cpu.isIntel ? "true" : "false");

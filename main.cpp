@@ -96,12 +96,12 @@ struct CPUInfo {
         std::uint32_t i = 0;
 #if __cpp_structured_bindings == 201606L
         for (auto & [ eax, ebx, ecx, edx ]: leafs) {
-            __get_cpuid_count(i, 0, &eax, &ebx, &ecx, &edx);
+            __get_cpuid(i, &eax, &ebx, &ecx, &edx);
             ++i;
         }
 #else
         for (auto &leaf: leafs) {
-            __get_cpuid_count(i, 0, &leaf.eax, &leaf.ebx, &leaf.ecx, &leaf.edx);
+            __get_cpuid(i, &leaf.eax, &leaf.ebx, &leaf.ecx, &leaf.edx);
             ++i;
         }
 #endif
@@ -120,6 +120,12 @@ struct CPUInfo {
             __get_cpuid_count(0x1A, 0, &regs.eax, &regs.ebx, &regs.ecx, &regs.edx);
             printf("core type: 0x%x\n", (regs.eax & 0xffff0000) >> 16);
         }
+	
+	Regs regs;	
+	__get_cpuid(0x80000000, &regs.eax, &regs.ebx, &regs.ecx, &regs.edx);
+	const std::uint32_t nleafExt = regs.eax;
+
+	std::printf("highes extended function: 0x%x\n", nleafExt);
 
         __get_cpuid(0x80000002, &brand[0], &brand[1], &brand[2], &brand[3]);
         __get_cpuid(0x80000003, &brand[4], &brand[5], &brand[6], &brand[7]);

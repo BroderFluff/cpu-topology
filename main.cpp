@@ -208,6 +208,10 @@ struct CPUInfo {
             std::printf("x2apicId2: 0x%x\n\n", x2apicId2);
 
             Cpu *cpu = static_cast<Cpu *>(p);
+	    if (!cpu->nodes) {
+		    cpu->nodes = new CpuNode[siblings2];
+		    cpu->numNodes = siblings2;
+	    }
             CpuNode &node = cpu->nodes[nextLevelId];
 
             if (node.type == CpuNodeType::Invalid) {
@@ -215,7 +219,7 @@ struct CPUInfo {
                 node.type = CpuNodeType::Core;
                 node.core.p = { siblings, new std::uint32_t [siblings] };
                 
-                node.core.p.logicalIds[x2apicId - nextLevelId] = x2apicId;
+            //    node.core.p.logicalIds[x2apicId - nextLevelId] = x2apicId;
             }
 
             node.core.p.logicalIds[x2apicId - nextLevelId] = x2apicId;
@@ -243,10 +247,12 @@ struct CPUInfo {
             cpu_set_t *cpusetp = CPU_ALLOC(maxNumIds);
             std::size_t size = CPU_ALLOC_SIZE(maxNumIds);
 
-            cpu.numNodes = maxNumIds;
-            cpu.nodes = new CpuNode[maxNumIds];
-            for (int i = 0; i < cpu.numNodes; ++i) {
-                cpu.nodes[i].core.l.nodeIndex = i;
+            //cpu.numNodes = maxNumIds;
+//            cpu.nodes = new CpuNode[maxNumIds];
+
+	    int i = 0;
+            for (;;) {
+                cpu.nodes[i].core.l.nodeIndex = i++;
 
                 thread &th = threads[i];
 
@@ -259,6 +265,10 @@ struct CPUInfo {
                 pthread_create(&th.t, &th.attr, threadRoutine, &cpu);
                 pthread_join(th.t, nullptr);
                 pthread_attr_destroy(&th.attr);
+
+		if (i >= cpu.numNodes) {
+			break;
+		}
             }
 
             CPU_FREE(cpusetp);

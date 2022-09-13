@@ -59,15 +59,19 @@ static constexpr std::uint32_t bit_HYBRID = (1U << 15);
 #   endif
 #endif
 
-template <class To, class From>
-To bit_cast(const From &from) noexcept {
+#include "Processor.h"
+
+
+
+
+namespace sys {
+
+    template <class To, class From>
+inline To bit_cast(const From &from) noexcept {
     To dst;
     std::memcpy(&dst, &from, sizeof(To));
     return dst;
-
 }
-
-namespace sys {
 
 struct CPUInfo {
     std::uint32_t nleafs;
@@ -115,7 +119,7 @@ struct CPUInfo {
         }
 #else
         for (auto &leaf: leafs) {
-            __get_cpuid(i, &leaf.eax, &leaf.ebx, &leaf.ecx, &leaf.edx);
+            __get_cpuid_count(i, 0, &leaf.eax, &leaf.ebx, &leaf.ecx, &leaf.edx);
             ++i;
         }
 #endif
@@ -135,20 +139,18 @@ struct CPUInfo {
 	__get_cpuid(0x80000000, &regs.eax, &regs.ebx, &regs.ecx, &regs.edx);
 	const std::uint32_t nleafExt = regs.eax;
 
+    std::printf("Highest function: 0x%x\n", nleafs);
+
 	std::printf("highes extended function: 0x%x\n", nleafExt);
 
-        __get_cpuid(0x80000002, &brand[0], &brand[1], &brand[2], &brand[3]);
-        __get_cpuid(0x80000003, &brand[4], &brand[5], &brand[6], &brand[7]);
-        __get_cpuid(0x80000004, &brand[8], &brand[9], &brand[10], &brand[11]);
+
 
 
         detectTopology();
     }
 
-    const char *getVendorId() const noexcept {
-        return bit_cast<char *>(&vendorId);
-        //return std::bit_cast<char *>(&vendorId);
-    }
+    const char *getVendorId() const noexcept { return bit_cast<char *>(&vendorId); }
+    const char *getBrandId() const noexcept { return bit_cast<char *>(&brand); }
 
     struct LogicalCore {
         std::uint32_t nodeIndex;
@@ -174,7 +176,7 @@ struct CPUInfo {
     struct Cpu {
         std::uint32_t numNodes;
         CpuNode *nodes = nullptr;
-	    int index = 0;
+	    std::uint32_t index = 0;
     };
 
     Cpu cpu;
@@ -255,30 +257,24 @@ Cpu *cpu = static_cast<Cpu *>(p);
              const std::uint32_t numCores = ((leafs[4].eax & 0xFC000000) >> 26) + 1;
             printf("num cores: %d\n", numCores);
 
-            //thread *threads = new thread[maxNumIds];
             cpu_set_t *cpusetp = CPU_ALLOC(maxNumIds);
             std::size_t size = CPU_ALLOC_SIZE(maxNumIds);
-
-            //cpu.numNodes = maxNumIds;
-//            cpu.nodes = new CpuNode[maxNumIds];
 
             for (;;) {
                 pthread_t t;
                 pthread_attr_t attr;
 
-                const 		int i = cpu.index;
-
                 pthread_attr_init(&attr);
 
                 CPU_ZERO_S(size, cpusetp);
-                CPU_SET_S(i, size, cpusetp);
+                CPU_SET_S(cpu.index, size, cpusetp);
 
                 pthread_attr_setaffinity_np(&attr, size, cpusetp);
                 pthread_create(&t, &attr, threadRoutine, &cpu);
                 pthread_join(t, nullptr);
                 pthread_attr_destroy(&attr);
                 
-                if (i >= cpu.numNodes) {
+                if (cpu.index >= cpu.numNodes) {
                     break;
                 }
                 
@@ -296,41 +292,6 @@ Cpu *cpu = static_cast<Cpu *>(p);
             // core within chip
             // chip within NUMA domain
             // NUMA domain
-
-#if 0
-
-            if (nleafs >= 0x0000000B && leafs[0x0B].ebx) {
-                puts("0x0B exists.");
-
-                std::uint32_t level = 0;
-                while (level < 2) {
-                    Regs leaf;
-                    __get_cpuid_count(0xB, level, &leaf.eax, &leaf.ebx, &leaf.ecx, &leaf.edx);
-
-                    dumpRegs(leaf);
-
-                    std::uint32_t bitShift = leaf.eax & 0x0F;
-                    std::uint32_t numCpus = leaf.ebx & 0xFF;
-                    std::uint32_t levelType = (leaf.ecx & 0xFF00) >> 8;
-                    std::uint32_t id = leaf.edx;
-
-                    printf("bits to shift: 0x%x\n", bitShift);
-                    printf("logical cpus at this level: 0x%x\n", numCpus);
-                    printf("level type: 0x%x\n", levelType);
-                    printf("x2APIC ID: 0x%x\n", id);
-
-                    if (levelType == 1) {
-                        printf("smt id: %d\n", id >> bitShift);
-                    } else if ( levelType == 2) {
-                        printf("core id: %d\n", id >> bitShift);
-                    }
-
-                    puts("\n");
-
-                    level++;
-                }
-            }
-#endif
         }
 
     }
@@ -362,23 +323,31 @@ Cpu *cpu = static_cast<Cpu *>(p);
 
 };
 
-static const CPUInfo cpu;
+
 
 }
 
+namespace sys {
+
+inline static const Processor cpu;
+
+}
+
+
 int main() {
 
-    puts((char *)sys::cpu.vendorId);
-
     puts(sys::cpu.getVendorId());
-    puts((char*)sys::cpu.brand);
+    puts(sys::cpu.getBrandId());
 
-    printf("INTEL: %s\n", sys::cpu.isIntel ? "true" : "false");
+    printf("Family ID: %d\n", sys::cpu.getFamilyId());
+
+/*     printf("INTEL: %s\n", sys::cpu.isIntel ? "true" : "false");
     printf("AMD: %s\n", sys::cpu.isAMD ? "true" : "false");
     printf("SSE: %s\n", sys::cpu.hasSSE() ? "true" : "false");
     printf("SSE3: %s\n", sys::cpu.hasSSE3() ? "true" : "false");
+    printf("SSSE3: %s\n", sys::cpu.hasSSSE3() ? "true" : "false");
     printf("AVX: %s\n", sys::cpu.hasAVX() ? "true" : "false");
-    printf("HYBRID: %s\n", sys::cpu.hasHYBRID() ? "true" : "false");
+    printf("HYBRID: %s\n", sys::cpu.hasHYBRID() ? "true" : "false"); */
 
     return 0;
 }

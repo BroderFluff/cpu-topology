@@ -1,7 +1,10 @@
 #include "Processor.h"
 
 #include <cstdint>
+#include <cstdio>
+
 #include <cpuid.h>
+#include <pthread.h>
 
 namespace sys {
 
@@ -26,14 +29,67 @@ Processor::Processor() noexcept {
         __get_cpuid(0x80000004, &brand[8], &brand[9], &brand[10], &brand[11]);
     }
 
-    
-
-
-
-
+    detectTopology();
 }
 
 Processor::~Processor() {
+}
+
+struct Thread {
+    pthread_t th;
+    pthread_attr_t attr;
+};
+
+static void *threadRoutine(void *arg) {
+    Regs regs;
+
+    __get_cpuid_count(0xB, 0, &regs.eax, &regs.ebx, &regs.ecx, &regs.edx);
+
+    static_cast<LogicalCore *>(arg)->x2apic = regs.edx;
+
+    return nullptr;
+}
+
+void Processor::detectTopology() noexcept {
+    Regs leaf;
+    __get_cpuid_count(0xB, 1, &leaf.eax, &leaf.ebx, &leaf.ecx, &leaf.edx);
+
+    std::printf("num: %d\n", leaf.ebx & 0xFF);
+
+    const std::uint32_t numCores = leaf.ebx & 0xFF;
+
+    logicalCores.resize(numCores, { -1U });
+
+    std::vector<Thread> threads(numCores);
+
+    cpu_set_t *cpusetp = CPU_ALLOC(numCores);
+    std::size_t s = CPU_ALLOC_SIZE(numCores);
+
+    std::uint32_t i = 0;
+    for (auto &th: threads) {
+        CPU_ZERO_S(s, cpusetp);
+        CPU_SET_S(i, s, cpusetp);
+
+        pthread_attr_init(&th.attr);
+        pthread_attr_setaffinity_np(&th.attr, s, cpusetp);
+        pthread_create(&th.th, &th.attr, threadRoutine, &logicalCores[i]);
+
+        ++i;
+    }
+
+    for (auto &th: threads) {
+        pthread_join(th.th, nullptr);
+        pthread_attr_destroy(&th.attr);
+    }
+
+    for (const auto &core: logicalCores) {
+        std::printf("core x2apic: 0x%x\n", core.x2apic);
+    }
+
+
+
+
+
 }
 
 }

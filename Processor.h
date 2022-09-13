@@ -21,6 +21,10 @@ struct Regs {
     std::uint32_t eax, ebx, ecx, edx;
 };
 
+struct LogicalCore {
+    std::uint32_t x2apic;
+};
+
 class Processor {
 public:
                     Processor() noexcept;
@@ -40,9 +44,13 @@ public:
     bool            isAMD() const noexcept;
 
 private:
-    std::uint32_t   vendorId[4] {};
-    std::vector<Regs> leaves;
-    std::uint32_t   brand[12];
+    void                detectTopology() noexcept;
+
+    std::uint32_t       vendorId[4] {};
+    std::vector<Regs>   leaves;
+    std::uint32_t       brand[12];
+
+    std::vector<LogicalCore> logicalCores;
 };
 
 inline const char * Processor::getVendorId() const noexcept {

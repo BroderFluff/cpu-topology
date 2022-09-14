@@ -340,6 +340,7 @@ int main() {
     puts(sys::cpu.getBrandId());
 
     printf("Family ID: %d\n", sys::cpu.getFamilyId());
+    printf("Model: %d\n", sys::cpu.getModel());
 
 /*     printf("INTEL: %s\n", sys::cpu.isIntel ? "true" : "false");
     printf("AMD: %s\n", sys::cpu.isAMD ? "true" : "false");

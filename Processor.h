@@ -22,7 +22,11 @@ struct Regs {
 };
 
 struct LogicalCore {
-    std::uint32_t x2apic;
+    std::uint32_t   index;
+    std::uint32_t   x2apic;
+    std::uint32_t   chip;
+    std::uint32_t   core;
+    std::uint32_t   coreType;
 };
 
 class Processor {

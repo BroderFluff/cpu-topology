@@ -45,7 +45,15 @@ static void *threadRoutine(void *arg) {
 
     __get_cpuid_count(0xB, 0, &regs.eax, &regs.ebx, &regs.ecx, &regs.edx);
 
-    static_cast<LogicalCore *>(arg)->x2apic = regs.edx;
+   // __get_cpuid(0x7, )
+   
+   const auto bitShift = regs.eax & 0x0000000F;
+   const auto x2apic = regs.edx;
+
+    *static_cast<LogicalCore *>(arg) = {
+        .x2apic = x2apic,
+        .core = x2apic >> bitShift,
+    };
 
     return nullptr;
 }
@@ -54,10 +62,7 @@ void Processor::detectTopology() noexcept {
     Regs leaf;
     __get_cpuid_count(0xB, 1, &leaf.eax, &leaf.ebx, &leaf.ecx, &leaf.edx);
 
-    std::printf("num: %d\n", leaf.ebx & 0xFF);
-
     const std::uint32_t numCores = leaf.ebx & 0xFF;
-
     logicalCores.resize(numCores, { -1U });
 
     std::vector<Thread> threads(numCores);
@@ -83,7 +88,7 @@ void Processor::detectTopology() noexcept {
     }
 
     for (const auto &core: logicalCores) {
-        std::printf("core x2apic: 0x%x\n", core.x2apic);
+        std::printf("core x2apic: 0x%x\ncore: %d\n", core.x2apic, core.core);
     }
 
 

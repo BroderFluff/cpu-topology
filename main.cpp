@@ -5,6 +5,8 @@
 #include <vector>
 #include <bit>
 
+#include <unistd.h>
+
 
 #define BIT_CHECK(val, bits) \
     (((val) & (bits)) == (bits))
@@ -57,6 +59,10 @@ static constexpr std::uint32_t bit_HYBRID = (1U << 15);
 #   else
 #       define bit_PREFTCHWT1 (1)
 #   endif
+#endif
+
+#ifndef bit_HTT
+#   define bit_HTT 0x80000000
 #endif
 
 #include "Processor.h"
@@ -349,6 +355,14 @@ int main() {
     printf("SSSE3: %s\n", sys::cpu.hasSSSE3() ? "true" : "false");
     printf("AVX: %s\n", sys::cpu.hasAVX() ? "true" : "false");
     printf("HYBRID: %s\n", sys::cpu.hasHYBRID() ? "true" : "false"); */
+
+    std::printf("Num cores: %d\n", sys::cpu.getNumCores());
+
+    std::printf("_SCN_NPROCESSORS_ONLN: %ld\n", sysconf(_SC_NPROCESSORS_ONLN));
+    cpu_set_t setp;
+    sched_getaffinity(0, sizeof(cpu_set_t), &setp);
+
+    std::printf("sched_getaffinity: %d\n", CPU_COUNT(&setp));
 
     return 0;
 }

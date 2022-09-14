@@ -5,6 +5,7 @@
 
 #include <cpuid.h>
 #include <pthread.h>
+#include <sched.h>
 
 namespace sys {
 
@@ -62,7 +63,7 @@ void Processor::detectTopology() noexcept {
     Regs leaf;
     __get_cpuid_count(0xB, 1, &leaf.eax, &leaf.ebx, &leaf.ecx, &leaf.edx);
 
-    const std::uint32_t numCores = leaf.ebx & 0xFF;
+    const std::uint32_t numCores = getNumCores();
     logicalCores.resize(numCores, { -1U });
 
     std::vector<Thread> threads(numCores);
@@ -90,11 +91,12 @@ void Processor::detectTopology() noexcept {
     for (const auto &core: logicalCores) {
         std::printf("core x2apic: 0x%x\ncore: %d\n", core.x2apic, core.core);
     }
+}
 
-
-
-
-
+std::uint32_t Processor::getNumCores() const noexcept {
+    cpu_set_t setp;
+    sched_getaffinity(0, sizeof(cpu_set_t), &setp);
+    return CPU_COUNT(&setp);
 }
 
 }

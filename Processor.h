@@ -47,6 +47,8 @@ public:
     bool            isIntel() const noexcept;
     bool            isAMD() const noexcept;
 
+    std::uint32_t   getNumCores() const noexcept;
+
 private:
     void                detectTopology() noexcept;
 

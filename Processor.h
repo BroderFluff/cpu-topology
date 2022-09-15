@@ -8,6 +8,9 @@
 
 #include <cpuid.h>
 
+#define BIT_CHECK(val, bits) \
+    (((val) & (bits)) == (bits))
+
 template <class To, class From>
 inline To bit_cast(const From &from) noexcept {
     To dst;
@@ -18,7 +21,7 @@ inline To bit_cast(const From &from) noexcept {
 namespace sys {
 
 struct Regs {
-    std::uint32_t eax, ebx, ecx, edx;
+    std::uint32_t   eax, ebx, ecx, edx;
 };
 
 struct LogicalCore {
@@ -34,8 +37,13 @@ public:
                     Processor() noexcept;
                     ~Processor();
 
+    std::uint32_t   getNumCores() const noexcept;
+
     const char *    getVendorId() const noexcept;
     const char *    getBrandId() const noexcept;
+
+    bool            isIntel() const noexcept;
+    bool            isAMD() const noexcept;
 
     std::uint32_t   getType() const noexcept;
     std::uint32_t   getFamilyId() const noexcept;
@@ -44,10 +52,11 @@ public:
     std::uint32_t   getExtendedFamilyId() const noexcept;
     std::uint32_t   getExtendedModelId() const noexcept;
 
-    bool            isIntel() const noexcept;
-    bool            isAMD() const noexcept;
-
-    std::uint32_t   getNumCores() const noexcept;
+    bool            hasSSE3() const noexcept;
+    bool            hasSSSE3() const noexcept { return BIT_CHECK(leafs[1].ecx, bit_SSSE3); }
+    bool            hasSSE41() const noexcept { return BIT_CHECK(leafs[1].ecx, bit_SSE4_1); }
+    bool            hasSSE42() const noexcept { return BIT_CHECK(leafs[1].ecx, bit_SSE4_2); }
+    bool            hasAVX() const noexcept { return BIT_CHECK(leafs[1].ecx, bit_AVX); }
 
 private:
     void                detectTopology() noexcept;

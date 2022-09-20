@@ -3,8 +3,6 @@
 #include <cstdint>
 #include <cstdio>
 
-#include <Windows.h>
-
 #if !defined(_MSC_VER)
 #include <cpuid.h>
 #include <pthread.h>

@@ -7,6 +7,7 @@ add_executable(cpuid)
 target_sources(cpuid
     PRIVATE
         Processor.cpp
+        Thread.cpp
         main.cpp
 )
 

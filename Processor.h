@@ -6,7 +6,54 @@
 #include <cstring>
 #include <vector>
 
+#include <cassert>
+#include <cstdio>
+#include <cstdint>
+#include <cstring>
+#include <vector>
+#include <bit>
+
+
+#define BIT_CHECK(val, bits) \
+    (((val) & (bits)) == (bits))
+
+#ifdef _MSC_VER
+#include <intrin.h>
+
+static int cpui[4];
+
+#define __get_cpuid(leaf, eax, ebx, ecx, edx) \
+    __cpuid(cpui, leaf); \
+    *eax = cpui[0]; *ebx = cpui[1]; *ecx = cpui[2]; *edx = cpui[3];
+
+#define __get_cpuid_count(leaf, subleaf, eax, ebx, ecx, edx) \
+    __cpuidex(cpui, leaf, subleaf); \
+    *eax = cpui[0]; *ebx = cpui[1]; *ecx = cpui[2]; *edx = cpui[3];
+
+#define bit_SSE3    0x00000001
+#define bit_PCLMUL  0x00000002
+#define bit_AVX     0x10000000
+
+#define bit_SSE     0x02000000
+#define bit_SSE2    0x04000000
+
+#define bit_SSSE3   0x00000200
+#define bit_SSE4_1  0x00080000
+#define bit_SSE4_2  0x00100000
+
+#define signature_AMD_ebx 0x68747541
+#define signature_AMD_edx 0x69746e65
+#define signature_AMD_ecx 0x444d4163
+
+#define signature_INTEL_ebx 0x756e6547
+#define signature_INTEL_edx 0x49656e69
+#define signature_INTEL_ecx 0x6c65746e
+
+#else
+#include <pthread.h>
+#include <sched.h>
 #include <cpuid.h>
+#endif
 
 #define BIT_CHECK(val, bits) \
     (((val) & (bits)) == (bits))
@@ -53,10 +100,10 @@ public:
     std::uint32_t   getExtendedModelId() const noexcept;
 
     bool            hasSSE3() const noexcept;
-    bool            hasSSSE3() const noexcept { return BIT_CHECK(leafs[1].ecx, bit_SSSE3); }
-    bool            hasSSE41() const noexcept { return BIT_CHECK(leafs[1].ecx, bit_SSE4_1); }
-    bool            hasSSE42() const noexcept { return BIT_CHECK(leafs[1].ecx, bit_SSE4_2); }
-    bool            hasAVX() const noexcept { return BIT_CHECK(leafs[1].ecx, bit_AVX); }
+    bool            hasSSSE3() const noexcept { return BIT_CHECK(leaves[1].ecx, bit_SSSE3); }
+    bool            hasSSE41() const noexcept { return BIT_CHECK(leaves[1].ecx, bit_SSE4_1); }
+    bool            hasSSE42() const noexcept { return BIT_CHECK(leaves[1].ecx, bit_SSE4_2); }
+    bool            hasAVX() const noexcept { return BIT_CHECK(leaves[1].ecx, bit_AVX); }
 
 private:
     void                detectTopology() noexcept;

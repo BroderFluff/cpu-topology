@@ -9,3 +9,8 @@ target_sources(cpuid
         Processor.cpp
         main.cpp
 )
+
+target_compile_features(cpuid
+    PRIVATE
+        cxx_std_20
+)

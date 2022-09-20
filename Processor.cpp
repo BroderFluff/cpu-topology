@@ -3,9 +3,15 @@
 #include <cstdint>
 #include <cstdio>
 
+#include <Windows.h>
+
+#if !defined(_MSC_VER)
 #include <cpuid.h>
 #include <pthread.h>
 #include <sched.h>
+#endif
+
+#include "Thread.h"
 
 namespace sys {
 
@@ -36,7 +42,7 @@ Processor::Processor() noexcept {
 Processor::~Processor() {
 }
 
-struct Thread {
+/*struct Thread {
     pthread_t th;
     pthread_attr_t attr;
 };
@@ -58,6 +64,7 @@ static void *threadRoutine(void *arg) {
 
     return nullptr;
 }
+*/
 
 void Processor::detectTopology() noexcept {
     Regs leaf;
@@ -67,6 +74,18 @@ void Processor::detectTopology() noexcept {
     logicalCores.resize(numCores, { -1U });
 
     std::vector<Thread> threads(numCores);
+
+    for (auto& th : threads) {
+        th = {
+            []() {
+                std::printf("yo!\n");
+
+            }
+        };
+        th.start();
+    }
+
+#if 0
 
     cpu_set_t *cpusetp = CPU_ALLOC(numCores);
     std::size_t s = CPU_ALLOC_SIZE(numCores);
@@ -88,15 +107,23 @@ void Processor::detectTopology() noexcept {
         pthread_attr_destroy(&th.attr);
     }
 
+#endif
+
     for (const auto &core: logicalCores) {
         std::printf("core x2apic: 0x%x\ncore: %d\n", core.x2apic, core.core);
     }
 }
 
 std::uint32_t Processor::getNumCores() const noexcept {
+#ifdef _MSC_VER
+    SYSTEM_INFO systemInfo;
+    GetSystemInfo(&systemInfo);
+    return systemInfo.dwNumberOfProcessors;
+#else
     cpu_set_t setp;
     sched_getaffinity(0, sizeof(cpu_set_t), &setp);
     return CPU_COUNT(&setp);
+#endif
 }
 
 }

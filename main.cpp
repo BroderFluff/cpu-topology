@@ -5,8 +5,8 @@
 #include <vector>
 #include <bit>
 
-#include <unistd.h>
 
+#if 0
 
 #define BIT_CHECK(val, bits) \
     (((val) & (bits)) == (bits))
@@ -202,7 +202,7 @@ struct CPUInfo {
 
             const std::uint32_t coreId = x2apicId >> bitShift;
 
-Cpu *cpu = static_cast<Cpu *>(p);
+            Cpu *cpu = static_cast<Cpu *>(p);
             std::printf("\nindex: %d\nbitShift: %d\n", cpu->index, bitShift);
             std::printf("siblings: %d\n", siblings);
             std::printf("levelType: %d\n", levelType);
@@ -333,6 +333,10 @@ Cpu *cpu = static_cast<Cpu *>(p);
 
 }
 
+#endif
+
+#include "Processor.h"
+
 namespace sys {
 
 inline static const Processor cpu;
@@ -357,12 +361,6 @@ int main() {
     printf("HYBRID: %s\n", sys::cpu.hasHYBRID() ? "true" : "false"); */
 
     std::printf("Num cores: %d\n", sys::cpu.getNumCores());
-
-    std::printf("_SCN_NPROCESSORS_ONLN: %ld\n", sysconf(_SC_NPROCESSORS_ONLN));
-    cpu_set_t setp;
-    sched_getaffinity(0, sizeof(cpu_set_t), &setp);
-
-    std::printf("sched_getaffinity: %d\n", CPU_COUNT(&setp));
 
     return 0;
 }

@@ -4,8 +4,9 @@
 
 #include <memory>
 
-#ifdef _MCS_VER
-
+#ifdef _MSC_VER
+#define WIN32_LEAN_AND_MEAN
+#include <Windows.h>
 #include <process.h>
 #else
 #include <pthread.h>
@@ -37,10 +38,9 @@ using NativeHandle = pthread_t;
 
 	template <class Fn>
 	Thread(Fn&& func) : func{ std::make_unique<ThreadFunc<Fn>>(std::move(func)) } {}
-
 	~Thread();
 
-	Thread& operator=(Thread &&other) {
+	Thread& operator=(Thread &&other) noexcept {
 		std::swap(func, other.func);
 		std::swap(handle, other.handle);
 		return *this;
@@ -57,11 +57,6 @@ private:
 	std::unique_ptr<Func> func{ nullptr };
 	NativeHandle handle;
 };
-
-inline void* threadRoutine(void* args) {
-	static_cast<Thread*>(args)->call();
-	return 0;
-}
 
 }
 

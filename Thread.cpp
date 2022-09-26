@@ -1,5 +1,11 @@
 #include "Thread.h"
 
+#ifdef _MSC_VER
+#define THREAD_ROUTINE_CALL void __cdecl
+#else
+#define THREAD_ROUTINE_CALL void *
+#endif
+
 namespace sys {
 
 Thread::~Thread() {
@@ -9,9 +15,13 @@ Thread::~Thread() {
     }
 }
 
+static THREAD_ROUTINE_CALL threadRoutine(void* args) {
+    static_cast<Thread*>(args)->call();
+}
+
 bool Thread::start() noexcept {
 #ifdef _MSC_VER
-	handle = _beginthread((_beginthread_proc_type) threadRoutine, 0, this);
+    handle = (HANDLE) _beginthread(threadRoutine, 0, this);
     return !!handle;
 #else
     return pthread_create(&handle, nullptr, threadRoutine, this) == 0;
@@ -19,7 +29,11 @@ bool Thread::start() noexcept {
 }
 
 bool Thread::join() const noexcept {
+#ifdef _MSC_VER
+    return WaitForSingleObject(handle, INFINITE) != WAIT_OBJECT_0;
+#else
     return pthread_join(handle, nullptr);
+#endif
 }
 
 }

@@ -2,6 +2,7 @@
 #ifndef SYS_THREAD_H
 #define SYS_THREAD_H
 
+#include <cstdint>
 #include <memory>
 
 #ifdef _MSC_VER
@@ -10,17 +11,35 @@
 #include <process.h>
 #else
 #include <pthread.h>
+#include <sched.h>
+#endif
+
+#ifndef BIT_CHECK
+#define BIT_CHECK(val, bits) \
+    (((val) & (bits)) == (bits))
 #endif
 
 namespace sys {
 
-struct ThreadAffinity {
 #ifdef _MSC_VER
+struct ThreadAffinity {
 	DWORD_PTR affinity{ 0 };
-#endif
-
 	ThreadAffinity(std::uint64_t mask) : affinity{ mask } {}
 };
+#else
+struct ThreadAffinity {
+	cpu_set_t *setp;
+	std::size_t count;
+
+	ThreadAffinity(std::uint64_t mask) {
+		const auto num = std::__popcount(mask);
+
+		CPU_COUNT_S(sizeof(cpu_set_t), &setp);
+	}
+
+	operator const cpu_set_t *() const noexcept { return &setp; }
+};
+#endif
 
 struct Func {
 					virtual ~Func() = default;

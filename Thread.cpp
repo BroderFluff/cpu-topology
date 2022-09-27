@@ -37,7 +37,10 @@ bool Thread::start(ThreadAffinity affinity) noexcept {
 
     return !!handle;
 #else
-    return pthread_create(&handle, nullptr, threadRoutine, this) == 0;
+    pthread_attr_t attr;
+    pthread_attr_init(&attr);
+    pthread_attr_setaffinity_np(&attr, affinity.count, &affinity.setp);
+    return pthread_create(&handle, &attr, threadRoutine, this) == 0;
 #endif
 }
 

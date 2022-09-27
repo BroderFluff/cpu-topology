@@ -14,9 +14,17 @@
 
 namespace sys {
 
+struct ThreadAffinity {
+#ifdef _MSC_VER
+	DWORD_PTR affinity{ 0 };
+#endif
+
+	ThreadAffinity(std::uint64_t mask) : affinity{ mask } {}
+};
+
 struct Func {
 					virtual ~Func() = default;
-	virtual void	call(void *args) noexcept = 0;
+	virtual void	call() noexcept = 0;
 };
 
 template <class Fn>
@@ -24,7 +32,7 @@ struct ThreadFunc : public Func {
 	Fn		func;
 
 			ThreadFunc(Fn&& func) noexcept : func(std::move(func)) {}
-	void	call(void *args) noexcept override { func(void *args); }
+	void	call() noexcept override { func(); }
 };
 
 class Thread final {
@@ -42,12 +50,12 @@ using NativeHandle = pthread_t;
 
 	Thread& operator=(Thread &&other) noexcept ;
 
-	bool start() noexcept;
+	bool start(ThreadAffinity affinity = { 0 }) noexcept;
 	bool join() const noexcept;
 	bool detatch() noexcept;
 	void destroy();
 
-	void call() { func->call(this); }
+	void call() { func->call(); }
 
 private:
 	std::unique_ptr<Func> func{ nullptr };

@@ -73,16 +73,17 @@ void Processor::detectTopology() noexcept {
 
     std::vector<Thread> threads(numCores);
 
+    std::uint32_t i = 0;
     for (auto& th : threads) {
         th = {
-            [](void *arg) {
+            [&, i]() {
                 Regs regs;
                 __get_cpuid_count(0xB, 0, &regs.eax, &regs.ebx, &regs.ecx, &regs.edx);
    
                 const auto bitShift = regs.eax & 0x0000000F;
                 const auto x2apic = regs.edx;
 
-                *static_cast<LogicalCore *>(arg) = {
+                *static_cast<LogicalCore *>(&logicalCores[i]) = {
                     .x2apic = x2apic,
                     .core = x2apic >> bitShift,
                 };
@@ -90,7 +91,9 @@ void Processor::detectTopology() noexcept {
                 return nullptr;
             }
         };
-        th.start();
+        th.start({ 1ULL << i });
+        ++i;
+        th.join();
     }
 
 #if 0

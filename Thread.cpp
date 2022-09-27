@@ -1,7 +1,7 @@
 #include "Thread.h"
 
 #ifdef _MSC_VER
-#define THREAD_ROUTINE_CALL void __cdecl
+#define THREAD_ROUTINE_CALL unsigned __cdecl
 #else
 #define THREAD_ROUTINE_CALL void *
 #endif
@@ -24,11 +24,17 @@ Thread& Thread::operator=(Thread &&other) noexcept {
 
 static THREAD_ROUTINE_CALL threadRoutine(void* args) {
     static_cast<Thread*>(args)->call();
+
+    return 0;
 }
 
-bool Thread::start() noexcept {
+bool Thread::start(ThreadAffinity affinity) noexcept {
 #ifdef _MSC_VER
-    handle = (HANDLE) _beginthread(threadRoutine, 0, this);
+    handle = (HANDLE) _beginthreadex(nullptr, 0, threadRoutine, this, CREATE_SUSPENDED, nullptr);
+    SetThreadAffinityMask(handle, affinity.affinity);
+    ResumeThread(handle);
+    //handle = (HANDLE) _beginthread(threadRoutine, 0, this);
+
     return !!handle;
 #else
     return pthread_create(&handle, nullptr, threadRoutine, this) == 0;

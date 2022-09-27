@@ -75,9 +75,19 @@ void Processor::detectTopology() noexcept {
 
     for (auto& th : threads) {
         th = {
-            []() {
-                std::printf("yo!\n");
+            [](void *arg) {
+                Regs regs;
+                __get_cpuid_count(0xB, 0, &regs.eax, &regs.ebx, &regs.ecx, &regs.edx);
+   
+                const auto bitShift = regs.eax & 0x0000000F;
+                const auto x2apic = regs.edx;
 
+                *static_cast<LogicalCore *>(arg) = {
+                    .x2apic = x2apic,
+                    .core = x2apic >> bitShift,
+                };
+
+                return nullptr;
             }
         };
         th.start();

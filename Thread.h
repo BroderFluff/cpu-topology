@@ -16,7 +16,7 @@ namespace sys {
 
 struct Func {
 					virtual ~Func() = default;
-	virtual void	call() noexcept = 0;
+	virtual void	call(void *args) noexcept = 0;
 };
 
 template <class Fn>
@@ -24,7 +24,7 @@ struct ThreadFunc : public Func {
 	Fn		func;
 
 			ThreadFunc(Fn&& func) noexcept : func(std::move(func)) {}
-	void	call() noexcept override { func(); }
+	void	call(void *args) noexcept override { func(void *args); }
 };
 
 class Thread final {
@@ -40,22 +40,18 @@ using NativeHandle = pthread_t;
 	Thread(Fn&& func) : func{ std::make_unique<ThreadFunc<Fn>>(std::move(func)) } {}
 	~Thread();
 
-	Thread& operator=(Thread &&other) noexcept {
-		std::swap(func, other.func);
-		std::swap(handle, other.handle);
-		return *this;
-	}
+	Thread& operator=(Thread &&other) noexcept ;
 
 	bool start() noexcept;
 	bool join() const noexcept;
 	bool detatch() noexcept;
 	void destroy();
 
-	void call() { func->call(); }
+	void call() { func->call(this); }
 
 private:
 	std::unique_ptr<Func> func{ nullptr };
-	NativeHandle handle;
+	NativeHandle handle {};
 };
 
 }

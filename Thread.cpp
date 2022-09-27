@@ -15,6 +15,13 @@ Thread::~Thread() {
     }
 }
 
+Thread& Thread::operator=(Thread &&other) noexcept {
+    std::swap(func, other.func);
+    std::swap(handle, other.handle);
+    
+    return *this;
+}
+
 static THREAD_ROUTINE_CALL threadRoutine(void* args) {
     static_cast<Thread*>(args)->call();
 }

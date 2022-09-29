@@ -27,18 +27,16 @@ struct ThreadAffinity {
 	ThreadAffinity(std::uint64_t mask) : affinity{ mask } {}
 };
 #else
-struct ThreadAffinity {
+/* struct ThreadAffinity {
 	cpu_set_t *setp;
 	std::size_t count;
 
 	ThreadAffinity(std::uint64_t mask) {
 		const auto num = std::__popcount(mask);
-
-		CPU_COUNT_S(sizeof(cpu_set_t), &setp);
 	}
 
 	operator const cpu_set_t *() const noexcept { return &setp; }
-};
+}; */
 #endif
 
 struct Func {
@@ -69,7 +67,7 @@ using NativeHandle = pthread_t;
 
 	Thread& operator=(Thread &&other) noexcept ;
 
-	bool start(ThreadAffinity affinity = { 0 }) noexcept;
+	bool start(std::uint64_t mask) noexcept;
 	bool join() const noexcept;
 	bool detatch() noexcept;
 	void destroy();

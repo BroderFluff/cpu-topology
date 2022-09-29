@@ -91,7 +91,7 @@ void Processor::detectTopology() noexcept {
                 return nullptr;
             }
         };
-        th.start({ 1ULL << i });
+        th.start(1ULL << i);
         ++i;
         th.join();
     }

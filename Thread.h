@@ -59,24 +59,29 @@ using NativeHandle = HANDLE;
 #else
 using NativeHandle = pthread_t;
 #endif
-	Thread() = default;
+				Thread() = default;
 
-	template <class Fn>
-	Thread(Fn&& func) : func{ std::make_unique<ThreadFunc<Fn>>(std::move(func)) } {}
-	~Thread();
+				template <class Fn>
+				Thread(Fn&& func) : func{ std::make_unique<ThreadFunc<Fn>>(std::move(func)) } {}
 
-	Thread& operator=(Thread &&other) noexcept ;
+				Thread(Thread &&other) noexcept;
+				~Thread();
 
-	bool start(std::uint64_t mask) noexcept;
-	bool join() const noexcept;
-	bool detatch() noexcept;
-	void destroy();
+	Thread &	operator=(Thread &&other) noexcept ;
 
-	void call() { func->call(); }
+	bool		start(std::uint64_t mask) noexcept;
+	bool		join() const noexcept;
+	bool		detatch() noexcept;
+	void		destroy() noexcept;
+
+	void		setAffinity(std::uint64_t affinityMask) noexcept;
 
 private:
+	void		call() noexcept { func->call(); }
+
 	std::unique_ptr<Func> func{ nullptr };
-	NativeHandle handle {};
+	NativeHandle	handle {};
+	pthread_attr_t	attr;
 };
 
 }

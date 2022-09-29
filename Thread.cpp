@@ -8,6 +8,10 @@
 
 namespace sys {
 
+int countTrailingZeroes(unsigned int v) noexcept {
+    return __builtin_ctz(v);
+}
+
 Thread::~Thread() {
     if (handle) {
         join();
@@ -15,7 +19,8 @@ Thread::~Thread() {
     }
 }
 
-Thread& Thread::operator=(Thread &&other) noexcept {
+Thread& Thread::operator=(Thread &&rhs) noexcept {
+    if (this != &other) {
     std::swap(func, other.func);
     std::swap(handle, other.handle);
     
@@ -44,13 +49,13 @@ bool Thread::start(std::uint64_t affinityMask) noexcept {
     CPU_ZERO(&set);
 
     while (affinityMask) {
-        const auto i = __builtin_ctz(affinityMask);
+        const auto i = countTrailingZeroes(affinityMask);
         CPU_SET(i, &set);
         affinityMask ^= (1ULL << i);
     }
     
     pthread_attr_setaffinity_np(&attr, sizeof(cpu_set_t), &set);
-    
+
     return pthread_create(&handle, &attr, threadRoutine, this) == 0;
 #endif
 }

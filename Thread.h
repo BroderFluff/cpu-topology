@@ -14,6 +14,12 @@
 #include <sched.h>
 #endif
 
+#ifdef _MSC_VER
+#define THREAD_ROUTINE_CALL unsigned __cdecl
+#else
+#define THREAD_ROUTINE_CALL void *
+#endif
+
 #ifndef BIT_CHECK
 #define BIT_CHECK(val, bits) \
     (((val) & (bits)) == (bits))
@@ -48,7 +54,7 @@ template <class Fn>
 struct ThreadFunc : public Func {
 	Fn		func;
 
-			ThreadFunc(Fn&& func) noexcept : func(std::move(func)) {}
+			ThreadFunc(Fn&& func) noexcept : func(std::forward<Fn>(func)) {}
 	void	call() noexcept override { func(); }
 };
 
@@ -75,6 +81,8 @@ using NativeHandle = pthread_t;
 	void		destroy() noexcept;
 
 	void		setAffinity(std::uint64_t affinityMask) noexcept;
+
+	static THREAD_ROUTINE_CALL threadRoutine(void *args);
 
 private:
 	void		call() noexcept { func->call(); }

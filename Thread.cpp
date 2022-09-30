@@ -1,15 +1,11 @@
 #include "Thread.h"
 
-#ifdef _MSC_VER
-#define THREAD_ROUTINE_CALL unsigned __cdecl
-#else
-#define THREAD_ROUTINE_CALL void *
-#endif
-
 namespace sys {
 
-int countTrailingZeroes(unsigned int v) noexcept {
+static int countTrailingZeroes(unsigned int v) noexcept {
+#if __has_builtin(__builtin_ctz)
     return __builtin_ctz(v);
+#endif
 }
 
 Thread::~Thread() {
@@ -20,16 +16,16 @@ Thread::~Thread() {
 }
 
 Thread& Thread::operator=(Thread &&rhs) noexcept {
-    if (this != &other) {
-    std::swap(func, other.func);
-    std::swap(handle, other.handle);
+    if (this != &rhs) {
+        std::swap(func, rhs.func);
+        std::swap(handle, rhs.handle);
+    }
     
     return *this;
 }
 
-static THREAD_ROUTINE_CALL threadRoutine(void* args) {
+THREAD_ROUTINE_CALL Thread::threadRoutine(void* args) {
     static_cast<Thread*>(args)->call();
-
     return 0;
 }
 

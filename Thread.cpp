@@ -1,5 +1,10 @@
 #include "Thread.h"
 
+#ifndef __has_builtin
+#define __has_builtin(x) 0
+#endif
+
+
 namespace sys {
 
 static int countTrailingZeroes(unsigned int v) noexcept {
@@ -12,7 +17,9 @@ Thread::~Thread() {
     if (handle) {
         join();
         //destroy();
+        CloseHandle(handle);
     }
+
 }
 
 Thread& Thread::operator=(Thread &&rhs) noexcept {
@@ -32,9 +39,13 @@ THREAD_ROUTINE_CALL Thread::threadRoutine(void* args) {
 bool Thread::start(std::uint64_t affinityMask) noexcept {
 #ifdef _MSC_VER
     handle = (HANDLE) _beginthreadex(nullptr, 0, threadRoutine, this, CREATE_SUSPENDED, nullptr);
+
+    if (handle == 0) {
+        return false;
+    }
+
     SetThreadAffinityMask(handle, affinityMask);
     ResumeThread(handle);
-    //handle = (HANDLE) _beginthread(threadRoutine, 0, this);
 
     return !!handle;
 #else

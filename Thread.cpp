@@ -1,9 +1,14 @@
 #include "Thread.h"
 
+#ifdef __has_builtin
+#define HAS_BUILTIN(x) __has_builtin(x)
+#else
+#define HAS_BUILTIN(x) 0
+#endif
+
 #ifndef __has_builtin
 #define __has_builtin(x) 0
 #endif
-
 
 namespace sys {
 

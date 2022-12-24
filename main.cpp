@@ -351,16 +351,16 @@ int main() {
 
     printf("Family ID: %d\n", sys::cpu.getFamilyId());
     printf("Model: %d\n", sys::cpu.getModel());
+    std::printf("Num logical cores: %d\n", sys::cpu.getNumCores());
 
-/*     printf("INTEL: %s\n", sys::cpu.isIntel ? "true" : "false");
-    printf("AMD: %s\n", sys::cpu.isAMD ? "true" : "false");
+    printf("INTEL: %s\n", sys::cpu.isIntel() ? "true" : "false");
+    printf("AMD: %s\n", sys::cpu.isAMD() ? "true" : "false");
     printf("SSE: %s\n", sys::cpu.hasSSE() ? "true" : "false");
+    printf("SSE2: %s\n", sys::cpu.hasSSE2() ? "true" : "false");
     printf("SSE3: %s\n", sys::cpu.hasSSE3() ? "true" : "false");
     printf("SSSE3: %s\n", sys::cpu.hasSSSE3() ? "true" : "false");
     printf("AVX: %s\n", sys::cpu.hasAVX() ? "true" : "false");
-    printf("HYBRID: %s\n", sys::cpu.hasHYBRID() ? "true" : "false"); */
-
-    std::printf("Num cores: %d\n", sys::cpu.getNumCores());
+    printf("HYBRID: %s\n", sys::cpu.hasHYBRID() ? "true" : "false");
 
     return 0;
 }

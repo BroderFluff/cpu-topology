@@ -21,8 +21,9 @@ static int countTrailingZeroes(unsigned int v) noexcept {
 Thread::~Thread() {
     if (handle) {
         join();
-        //destroy();
+        #if defined(_MSC_VER)
         CloseHandle(handle);
+        #endif
     }
 
 }
@@ -54,7 +55,7 @@ bool Thread::start(std::uint64_t affinityMask) noexcept {
 
     return !!handle;
 #else
-    pthread_attr_t attr;
+    //pthread_attr_t attr;
     pthread_attr_init(&attr);
 
     cpu_set_t set;

@@ -22,6 +22,8 @@
 #include <Windows.h>
 #include <intrin.h>
 
+#define INLINE __forceinline
+
 static int cpui[4];
 
 #define __get_cpuid(leaf, eax, ebx, ecx, edx) \
@@ -55,6 +57,12 @@ static int cpui[4];
 #include <pthread.h>
 #include <sched.h>
 #include <cpuid.h>
+
+#define INLINE __attribute__((always_inline)) inline
+#endif
+
+#ifndef bit_HYBRID
+static constexpr std::uint32_t bit_HYBRID = (1U << 15);
 #endif
 
 #define BIT_CHECK(val, bits) \
@@ -101,11 +109,22 @@ public:
     std::uint32_t   getExtendedFamilyId() const noexcept;
     std::uint32_t   getExtendedModelId() const noexcept;
 
-    bool            hasSSE3() const noexcept;
+    inline bool     hasSSE3() const noexcept { return BIT_CHECK(leaves[1].ecx, bit_SSE3); }
     bool            hasSSSE3() const noexcept { return BIT_CHECK(leaves[1].ecx, bit_SSSE3); }
     bool            hasSSE41() const noexcept { return BIT_CHECK(leaves[1].ecx, bit_SSE4_1); }
     bool            hasSSE42() const noexcept { return BIT_CHECK(leaves[1].ecx, bit_SSE4_2); }
     bool            hasAVX() const noexcept { return BIT_CHECK(leaves[1].ecx, bit_AVX); }
+
+        // edx:
+    //inline bool hasHTT() const noexcept { return BIT_CHECK(leaves[1].edx, bit_HTT); }
+
+    // edx:
+    inline bool hasMMX() const noexcept { return BIT_CHECK(leaves[1].edx, bit_MMX); }
+    inline bool hasSSE() const noexcept { return BIT_CHECK(leaves[1].edx, bit_SSE); }
+    inline bool hasSSE2() const noexcept { return BIT_CHECK(leaves[1].edx, bit_SSE2); }
+
+    // edx:
+    inline bool hasHYBRID() const noexcept { return BIT_CHECK(leaves[7].edx, bit_HYBRID); }
 
 private:
     void                detectTopology() noexcept;
@@ -117,15 +136,15 @@ private:
     std::vector<LogicalCore> logicalCores;
 };
 
-inline const char * Processor::getVendorId() const noexcept {
+INLINE const char * Processor::getVendorId() const noexcept {
     return bit_cast<char *>(&vendorId);
 }
 
-inline const char * Processor::getBrandId() const noexcept {
-    return bit_cast<char *>(&brand);
+INLINE const char * Processor::getBrandId() const noexcept {
+    return bit_cast<const char *>(&brand);
 }
 
-inline bool Processor::isIntel() const noexcept {
+INLINE bool Processor::isIntel() const noexcept {
     return vendorId[0] == signature_INTEL_ebx && vendorId[2] == signature_INTEL_ecx && vendorId[1] == signature_INTEL_edx;
 }
 

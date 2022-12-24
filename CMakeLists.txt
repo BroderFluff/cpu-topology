@@ -4,6 +4,14 @@ project(CpuID)
 
 add_executable(cpuid)
 
+set_target_properties(cpuid
+    PROPERTIES
+        CXX_STANDARD_REQUIRED ON
+        CXX_STANDARD 20
+        CXX_EXTENSIONS OFF
+        EXPORT_COMPILE_COMMANDS ON
+)
+
 target_sources(cpuid
     PRIVATE
         Processor.cpp
@@ -11,7 +19,8 @@ target_sources(cpuid
         main.cpp
 )
 
-target_compile_features(cpuid
+target_compile_options(cpuid
     PRIVATE
-        cxx_std_20
+        -O3
+        -s
 )

@@ -355,12 +355,18 @@ int main() {
 
     printf("INTEL: %s\n", sys::cpu.isIntel() ? "true" : "false");
     printf("AMD: %s\n", sys::cpu.isAMD() ? "true" : "false");
+    printf("MMX: %s\n", sys::cpu.hasMMX() ? "true" : "false");
     printf("SSE: %s\n", sys::cpu.hasSSE() ? "true" : "false");
     printf("SSE2: %s\n", sys::cpu.hasSSE2() ? "true" : "false");
     printf("SSE3: %s\n", sys::cpu.hasSSE3() ? "true" : "false");
     printf("SSSE3: %s\n", sys::cpu.hasSSSE3() ? "true" : "false");
     printf("AVX: %s\n", sys::cpu.hasAVX() ? "true" : "false");
     printf("HYBRID: %s\n", sys::cpu.hasHYBRID() ? "true" : "false");
+
+    auto cores = sys::cpu.getCores();
+    for (const sys::LogicalCore &core: cores) {
+        std::printf("index: %d\n", core.index);
+    }
 
     sys::cpu.forEachThread([](const sys::LogicalCore &core) {
         std::printf("core: %d, chip: %d, core type: %d\n", core.core, core.chip, core.coreType);

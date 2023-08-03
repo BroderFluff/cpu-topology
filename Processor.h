@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <cstring>
 #include <vector>
+#include <span>
 
 #include <cassert>
 #include <cstdio>
@@ -129,6 +130,8 @@ public:
             f(it);
         }
     }
+
+    std::span<const LogicalCore> getCores() const noexcept { return logicalCores; }    
 
 private:
     void              detectTopology() noexcept;

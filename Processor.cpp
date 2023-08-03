@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <cstdio>
+
 #include <x86intrin.h>
 
 #if !defined(_MSC_VER)
@@ -89,6 +90,7 @@ void Processor::detectTopology() noexcept {
                 const std::uint32_t x2apic = regs.edx;
 
                 *static_cast<LogicalCore *>(&logicalCores[i]) = {
+                    .index = i,
                     .x2apic = x2apic,
                     .core = x2apic >> bitShift,
                 };

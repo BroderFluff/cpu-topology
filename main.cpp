@@ -362,5 +362,9 @@ int main() {
     printf("AVX: %s\n", sys::cpu.hasAVX() ? "true" : "false");
     printf("HYBRID: %s\n", sys::cpu.hasHYBRID() ? "true" : "false");
 
+    sys::cpu.forEachThread([](const sys::LogicalCore &core) {
+        std::printf("core: %d, chip: %d, core type: %d\n", core.core, core.chip, core.coreType);
+    });
+
     return 0;
 }

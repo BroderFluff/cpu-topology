@@ -21,6 +21,21 @@ target_sources(cpuid
 
 target_compile_options(cpuid
     PRIVATE
-        -O3
-        -s
+        -Wall
+        -Wextra
+        -Wconversion
+        $<$<CONFIG:Debug>:
+            -O0
+            -fsanitize=thread,undefined
+        >
+        $<$<CONFIG:Release>:
+            -O3
+        >
+)
+
+target_link_options(cpuid
+    PRIVATE
+        $<$<CONFIG:Debug>:
+            -fsanitize=thread,undefined
+        >
 )

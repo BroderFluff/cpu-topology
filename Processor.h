@@ -109,29 +109,33 @@ public:
     std::uint32_t   getExtendedFamilyId() const noexcept;
     std::uint32_t   getExtendedModelId() const noexcept;
 
-    inline bool     hasSSE3() const noexcept { return BIT_CHECK(leaves[1].ecx, bit_SSE3); }
-    bool            hasSSSE3() const noexcept { return BIT_CHECK(leaves[1].ecx, bit_SSSE3); }
-    bool            hasSSE41() const noexcept { return BIT_CHECK(leaves[1].ecx, bit_SSE4_1); }
-    bool            hasSSE42() const noexcept { return BIT_CHECK(leaves[1].ecx, bit_SSE4_2); }
-    bool            hasAVX() const noexcept { return BIT_CHECK(leaves[1].ecx, bit_AVX); }
-
-        // edx:
-    //inline bool hasHTT() const noexcept { return BIT_CHECK(leaves[1].edx, bit_HTT); }
+    // ecx:
+    INLINE bool     hasSSE3() const noexcept { return BIT_CHECK(leaves[1].ecx, bit_SSE3); }
+    INLINE bool     hasSSSE3() const noexcept { return BIT_CHECK(leaves[1].ecx, bit_SSSE3); }
+    INLINE bool     hasSSE41() const noexcept { return BIT_CHECK(leaves[1].ecx, bit_SSE4_1); }
+    INLINE bool     hasSSE42() const noexcept { return BIT_CHECK(leaves[1].ecx, bit_SSE4_2); }
+    INLINE bool     hasAVX() const noexcept { return BIT_CHECK(leaves[1].ecx, bit_AVX); }
 
     // edx:
-    inline bool hasMMX() const noexcept { return BIT_CHECK(leaves[1].edx, bit_MMX); }
-    inline bool hasSSE() const noexcept { return BIT_CHECK(leaves[1].edx, bit_SSE); }
-    inline bool hasSSE2() const noexcept { return BIT_CHECK(leaves[1].edx, bit_SSE2); }
+    INLINE bool     hasHTT() const noexcept { return BIT_CHECK(leaves[1].edx, bit_HTT); }
+    INLINE bool     hasMMX() const noexcept { return BIT_CHECK(leaves[1].edx, bit_MMX); }
+    INLINE bool     hasSSE() const noexcept { return BIT_CHECK(leaves[1].edx, bit_SSE); }
+    INLINE bool     hasSSE2() const noexcept { return BIT_CHECK(leaves[1].edx, bit_SSE2); }
+    INLINE bool     hasHYBRID() const noexcept { return BIT_CHECK(leaves[7].edx, bit_HYBRID); }
 
-    // edx:
-    inline bool hasHYBRID() const noexcept { return BIT_CHECK(leaves[7].edx, bit_HYBRID); }
+    template <class Func>
+    INLINE void forEachThread(Func &&f) const noexcept {
+        for (const auto &it: logicalCores) {
+            f(it);
+        }
+    }
 
 private:
-    void                detectTopology() noexcept;
+    void              detectTopology() noexcept;
 
-    std::uint32_t       vendorId[4] {};
-    std::vector<Regs>   leaves;
-    std::uint32_t       brand[12];
+    std::uint32_t     vendorId[4] {};
+    std::vector<Regs> leaves;
+    std::uint32_t     brand[12];
 
     std::vector<LogicalCore> logicalCores;
 };
@@ -148,31 +152,31 @@ INLINE bool Processor::isIntel() const noexcept {
     return vendorId[0] == signature_INTEL_ebx && vendorId[2] == signature_INTEL_ecx && vendorId[1] == signature_INTEL_edx;
 }
 
-inline bool Processor::isAMD() const noexcept {
+INLINE bool Processor::isAMD() const noexcept {
     return vendorId[0] == signature_AMD_ebx && vendorId[2] == signature_AMD_ecx && vendorId[1] == signature_AMD_edx;
 }
 
-inline std::uint32_t Processor::getType() const noexcept {
+INLINE std::uint32_t Processor::getType() const noexcept {
     return (leaves[1].eax & 0x00003000) >> 12;
 }
 
-inline std::uint32_t Processor::getFamilyId() const noexcept {
+INLINE std::uint32_t Processor::getFamilyId() const noexcept {
     return (leaves[1].eax & 0x00000F00) >> 8;
 }
 
-inline std::uint32_t Processor::getModel() const noexcept {
+INLINE std::uint32_t Processor::getModel() const noexcept {
     return (leaves[1].eax & 0x000000F0) >> 4;
 }
 
-inline std::uint32_t Processor::getStepping() const noexcept {
+INLINE std::uint32_t Processor::getStepping() const noexcept {
     return (leaves[1].eax & 0x0000000F);
 }
 
-inline std::uint32_t Processor::getExtendedFamilyId() const noexcept {
+INLINE std::uint32_t Processor::getExtendedFamilyId() const noexcept {
     return (leaves[1].eax & 0x0FF00000) >> 24;
 }
 
-inline std::uint32_t Processor::getExtendedModelId() const noexcept {
+INLINE std::uint32_t Processor::getExtendedModelId() const noexcept {
     return (leaves[1].eax & 0x000F0000) >> 16;
 }
 

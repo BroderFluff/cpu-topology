@@ -73,11 +73,11 @@ using NativeHandle = pthread_t;
 				Thread(Thread &&other) noexcept;
 				~Thread();
 
-	Thread& operator=(const Thread&) noexcept = delete;
-	Thread& operator=(Thread&& other) noexcept;
+	Thread&		operator=(const Thread&) noexcept = delete;
+	Thread&		operator=(Thread&& other) noexcept;
 
 	bool		start(std::uint64_t mask) noexcept;
-	bool		join() const noexcept;
+	bool		join() noexcept;
 	bool		detatch() noexcept;
 	void		destroy() noexcept;
 
@@ -90,9 +90,6 @@ private:
 
 	std::unique_ptr<Func> func{ nullptr };
 	NativeHandle	handle {};
-#ifndef _MSC_VER
-	pthread_attr_t	attr;
-#endif
 };
 
 }

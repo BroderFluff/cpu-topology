@@ -1,5 +1,7 @@
 #include "Thread.h"
 
+#include <pthread.h>
+
 #ifdef __has_builtin
 #define HAS_BUILTIN(x) __has_builtin(x)
 #else
@@ -25,6 +27,9 @@ Thread::~Thread() {
         CloseHandle(handle);
         #endif
     }
+
+#if !defined(_MSC_VER)
+#endif
 
 }
 
@@ -55,7 +60,7 @@ bool Thread::start(std::uint64_t affinityMask) noexcept {
 
     return !!handle;
 #else
-    //pthread_attr_t attr;
+    pthread_attr_t attr;
     pthread_attr_init(&attr);
 
     cpu_set_t set;
@@ -69,15 +74,24 @@ bool Thread::start(std::uint64_t affinityMask) noexcept {
     
     pthread_attr_setaffinity_np(&attr, sizeof(cpu_set_t), &set);
 
-    return pthread_create(&handle, &attr, threadRoutine, this) == 0;
+    const int status = pthread_create(&handle, &attr, threadRoutine, this);
+
+    pthread_attr_destroy(&attr);
+
+    return status == 0;
 #endif
 }
 
-bool Thread::join() const noexcept {
+bool Thread::join() noexcept {
 #ifdef _MSC_VER
     return WaitForSingleObject(handle, INFINITE) != WAIT_OBJECT_0;
 #else
-    return pthread_join(handle, nullptr);
+    if (handle) {
+        const int status = pthread_join(handle, nullptr);
+        handle = {};
+        return status == 0;
+    }
+    return false;
 #endif
 }
 

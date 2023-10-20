@@ -3,9 +3,10 @@
 #include <cstdint>
 #include <cstdio>
 
+#if defined(_MSC_VER)
+#include <immintrin.h>
+#elif
 #include <x86intrin.h>
-
-#if !defined(_MSC_VER)
 #include <cpuid.h>
 #include <pthread.h>
 #include <sched.h>
@@ -89,11 +90,13 @@ void Processor::detectTopology() noexcept {
                 const std::uint32_t bitShift = regs.eax & 0x0000000F;
                 const std::uint32_t x2apic = regs.edx;
 
-                *static_cast<LogicalCore *>(&logicalCores[i]) = {
-                    .index = i,
-                    .x2apic = x2apic,
-                    .core = x2apic >> bitShift,
-                };
+                logicalCores[i].index = i;
+                logicalCores[i].x2apic = x2apic;
+                logicalCores[i].core = x2apic >> bitShift;
+
+                __get_cpuid_count(0x1A, 0, &regs.eax, &regs.ebx, &regs.ecx, &regs.edx);
+
+                logicalCores[i].coreType = (regs.eax & 0xff000000) >> 24; // 32 = E-core (Gracemont), 64 = P-core (Golden Cove)
 
                 return nullptr;
             }

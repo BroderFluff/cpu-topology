@@ -39,6 +39,9 @@ static int cpui[4];
 #define bit_PCLMUL  0x00000002
 #define bit_AVX     0x10000000
 
+#define bit_MMX     0x00800000
+#define bit_HTT     0x10000000
+
 #define bit_SSE     0x02000000
 #define bit_SSE2    0x04000000
 

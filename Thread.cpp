@@ -1,6 +1,8 @@
 #include "Thread.h"
 
+#if defined(__linux__)
 #include <pthread.h>
+#endif
 
 #ifdef __has_builtin
 #define HAS_BUILTIN(x) __has_builtin(x)
@@ -23,14 +25,12 @@ static int countTrailingZeroes(unsigned int v) noexcept {
 Thread::~Thread() {
     if (handle) {
         join();
-        #if defined(_MSC_VER)
+#if defined(_MSC_VER)
         CloseHandle(handle);
-        #endif
+#endif
     }
-
 #if !defined(_MSC_VER)
 #endif
-
 }
 
 Thread& Thread::operator=(Thread &&rhs) noexcept {

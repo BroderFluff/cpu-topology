@@ -5,7 +5,7 @@
 
 #if defined(_MSC_VER)
 #include <immintrin.h>
-#elif
+#else
 #include <x86intrin.h>
 #include <cpuid.h>
 #include <pthread.h>
@@ -72,8 +72,8 @@ static void *threadRoutine(void *arg) {
 */
 
 void Processor::detectTopology() noexcept {
-    Regs leaf;
-    __get_cpuid_count(0xB, 1, &leaf.eax, &leaf.ebx, &leaf.ecx, &leaf.edx);
+    /* Regs leaf;
+    __get_cpuid_count(0xB, 1, &leaf.eax, &leaf.ebx, &leaf.ecx, &leaf.edx); */
 
     const std::uint32_t numCores = getNumCores();
     logicalCores.resize(numCores, { .x2apic = -1U });

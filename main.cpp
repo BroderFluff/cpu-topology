@@ -369,7 +369,7 @@ int main() {
     }
 
     sys::cpu.forEachThread([](const sys::LogicalCore &core) {
-        std::printf("core: %d, chip: %d, core type: %d\n", core.core, core.chip, core.coreType);
+        std::printf("chip: %d, core: %d, core type: %d\n", core.chip, core.core, core.coreType);
     });
 
     return 0;
